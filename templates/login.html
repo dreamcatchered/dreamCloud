@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Вход — Dream Cloud{% endblock %}
+{% block meta_title %}Вход в Dream Cloud{% endblock %}
+{% block meta_description %}Войдите в своё облачное хранилище{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+{% block canonical_url %}/login{% endblock %}
+
+{% block body %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #0f0f12;
+            --surface-bright: #16161a;
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #3e63dd;
+            --accent-glow: rgba(62, 99, 221, 0.35);
+            --accent-dark: #2a449e;
+            --text-main: #eeeeef;
+            --text-muted: #94a3b8;
+            --font-head: 'Unbounded', sans-serif;
+            --font-body: 'Manrope', sans-serif;
+            --radius-lg: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAA5OTkAAAAAAAAAAABMTExERERmZmUzhP2MAAAABnRSTlMzf7+/v7+al9wVAAAAWAFJREFUeJzbQRaAIAxD0X+hN+gN9v4XW1OhouK82Q0zhCaK4/2M8Wqt9b63z4t9X+z7Yt8X+77Y98W+L/Z9se+LfV/s+2LfF/u+2PfFvi/2fbHvi31f7Pti3xdf2Ec/qW09dZkAAAAASUVORK5CYII=');
+            opacity: 0.03; pointer-events: none; z-index: 0;
+        }
+
+        .glow {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 120%; height: 900px;
+            background: radial-gradient(circle at 50% 0%, var(--accent-glow) 0%, transparent 60%);
+            z-index: 0; pointer-events: none; opacity: 0.6;
+        }
+
+        .container {
+            max-width: 500px;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 50px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-decoration: none;
+            color: #fff;
+            font-family: var(--font-head);
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+
+        .logo i {
+            color: var(--accent);
+            filter: drop-shadow(0 0 10px var(--accent));
+        }
+
+        .auth-card h1 {
+            font-family: var(--font-head);
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .auth-card > p {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input {
+            background: var(--surface-bright);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(62, 99, 221, 0.1);
+        }
+
+        .input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: none;
+            font-family: var(--font-head);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 20px rgba(62, 99, 221, 0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fecaca;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-divider span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--text-muted);
+        }
+
+        .auth-footer-text {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .auth-footer-text a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 0 16px; }
+            .auth-card { padding: 32px 24px; }
+            .auth-card h1 { font-size: 1.5rem; }
+            .btn { padding: 12px 24px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div class="glow"></div>
+
+    <div class="container">
+        <div class="auth-card">
+            <div class="logo">
+                <i data-lucide="cloud"></i> DREAM CLOUD
+            </div>
+
+            <h1>Вход</h1>
+            <p>Войдите в своё облачное хранилище</p>
+
+            <form id="loginForm" class="auth-form">
+                <div class="input-group">
+                    <label for="username">Логин</label>
+                    <input type="text" id="username" name="username" class="input" placeholder="Введите логин" required autocomplete="username">
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" class="input" placeholder="Введите пароль" required autocomplete="current-password">
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+
+                <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+
+            {% if sso_enabled %}
+            <div class="auth-divider">
+                <span>или</span>
+            </div>
+            <a href="/sso/login" class="btn btn-secondary"><i data-lucide="user"></i> Войти через dreamID</a>
+            {% endif %}
+
+            <p class="auth-footer-text">
+                Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const button = form.querySelector('button');
+            const errorMessage = document.getElementById('errorMessage');
+
+            button.disabled = true;
+            errorMessage.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        username: form.username.value,
+                        password: form.password.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorMessage.textContent = data.error || 'Ошибка входа';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Ошибка соединения';
+                errorMessage.style.display = 'block';
+            } finally {
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+{% endblock %}

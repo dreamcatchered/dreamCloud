@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /sso/
+Disallow: /settings
+Disallow: /dashboard
+
+# Sitemap
+Sitemap: https://cloud.dreampartners.online/sitemap.xml
+
+
+

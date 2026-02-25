@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>{% block title %}Dream Cloud — Облачное хранилище файлов{% endblock %}</title>
+    <meta name="title" content="{% block meta_title %}Dream Cloud — Облачное хранилище файлов{% endblock %}">
+    <meta name="description" content="{% block meta_description %}Безопасное облачное хранилище для ваших файлов. Загружайте, храните и делитесь файлами с удобным интерфейсом.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}облачное хранилище, файлы, загрузка файлов, облако, хранение данных, файловое хранилище{% endblock %}">
+    <meta name="author" content="Dream Partners">
+    <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+    <meta name="language" content="Russian">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cloud.dreampartners.online{% block og_url %}/{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Dream Cloud — Облачное хранилище файлов{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Безопасное облачное хранилище для ваших файлов. Загружайте, храните и делитесь файлами с удобным интерфейсом.{% endblock %}">
+    <meta property="og:image" content="https://api.dreampartners.online/icons/cloud/android-chrome-512x512.png">
+    <meta property="og:site_name" content="Dream Cloud">
+    <meta property="og:locale" content="ru_RU">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://cloud.dreampartners.online{% block twitter_url %}/{% endblock %}">
+    <meta property="twitter:title" content="{% block twitter_title %}Dream Cloud — Облачное хранилище файлов{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}Безопасное облачное хранилище для ваших файлов. Загружайте, храните и делитесь файлами с удобным интерфейсом.{% endblock %}">
+    <meta property="twitter:image" content="https://api.dreampartners.online/icons/cloud/android-chrome-512x512.png">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="https://api.dreampartners.online/icons/cloud/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://api.dreampartners.online/icons/cloud/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://api.dreampartners.online/icons/cloud/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="https://api.dreampartners.online/icons/cloud/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="https://api.dreampartners.online/icons/cloud/favicon-64x64.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="https://api.dreampartners.online/icons/cloud/favicon-128x128.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="https://api.dreampartners.online/icons/cloud/favicon-256x256.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://api.dreampartners.online/icons/cloud/favicon-512x512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://api.dreampartners.online/icons/cloud/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="https://api.dreampartners.online/icons/cloud/logo.svg">
+    
+    <!-- Android Chrome Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="https://api.dreampartners.online/icons/cloud/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://api.dreampartners.online/icons/cloud/android-chrome-512x512.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#0a0a0b">
+    <meta name="msapplication-TileColor" content="#0a0a0b">
+    <meta name="msapplication-TileImage" content="https://api.dreampartners.online/icons/cloud/android-chrome-192x192.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://cloud.dreampartners.online{% block canonical_url %}/{% endblock %}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Unbounded:wght@300;400;700&family=Space+Grotesk:wght@300;500;700&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Video.js Media Player -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block body %}{% endblock %}
+    
+    <!-- Video.js Media Player -->
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                
+                // Seamless Auth
+                if (tg.initData && (window.location.pathname === '/' || window.location.pathname === '/login')) {
+                    fetch('/api/telegram/auth', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({initData: tg.initData})
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.authenticated) {
+                            window.location.href = '/dashboard';
+                        }
+                    })
+                    .catch(e => console.error('Telegram Auth Error:', e));
+                }
+                
+                // Theme sync
+                if (tg.colorScheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                }
+                
+                // Set colors
+                try {
+                    tg.setHeaderColor('#0f0f12'); // var(--surface)
+                    tg.setBackgroundColor('#050505'); // var(--bg)
+                    tg.setBottomBarColor('#0f0f12'); // var(--surface)
+                } catch (e) {
+                    console.warn('Telegram WebApp color setting failed:', e);
+                }
+            }
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+
