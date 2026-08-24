@@ -1,0 +1,15 @@
+[Unit]
+Description=Dream Cloud Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/home/dream/projects/cloud
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 5033
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

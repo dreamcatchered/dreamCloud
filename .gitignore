@@ -3,6 +3,10 @@
 .env.local
 .env.*.local
 
+# Telethon / bot session files (contain auth data - never commit)
+*.session
+*.session-journal
+
 # Database
 *.db
 *.sqlite
@@ -33,6 +37,8 @@ logs/
 # Uploads
 temp_uploads/
 uploads/
+files/
+storage/
 
 # OS
 .DS_Store

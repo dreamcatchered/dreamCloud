@@ -1,284 +1,157 @@
-# 🔐 Dream Cloud - Зашифрованное облачное хранилище
+# Dream Cloud
 
-**Бесплатное, приватное облачное хранилище с сквозным шифрованием (E2E)**
+Self-hosted file-sharing cloud backed by Telegram storage. Upload files through the
+web UI, a REST API, or a Telegram bot — and get back a public download link.
 
-![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+Files are stored on Telegram via a **self-hosted Bot API server**, which raises the
+upload limit from the official cloud Bot API's 20 MB to **2 GB** per file. No
+userbot (Telethon/MTProto) is involved anymore: everything runs through the plain
+HTTP Bot API, so there are no session files, no `api_id`/`api_hash`, and no risk of
+the account getting flagged.
 
----
+## Architecture
 
-## ✨ Особенности
+```
+Browser / curl / bot ──► FastAPI web app (main.py)
+                            │   streams upload to disk, then into the Bot API
+                            ▼
+                 Self-hosted Telegram Bot API server (TG_API_BASE)
+                            │
+                            ▼
+                     Telegram (file storage)
 
-### 🔒 Безопасность
-- **End-to-End Encryption** - AES-256-GCM шифрование на устройстве
-- **Zero Knowledge** - Сервер никогда не видит расшифрованные данные
-- **Open Source** - Проверь код на GitHub
-- **No Tracking** - Полная приватность
+bot.py — long-polling bot: send it a file in Telegram, get a download link.
+database.py — SQLite index mapping short file IDs to Telegram file_ids.
+tg_bot.py — thin httpx client for sendDocument/getFile streaming.
+```
 
-### 💾 Хранилище
-- **Telegram Backend** - Файлы хранятся в Telegram, не на сервере
-- **Бесплатно** - Неограниченное хранилище (лимит Telegram)
-- **Моментально** - Загруженные файлы доступны тут же
-- **Надёжно** - Защищено инфраструктурой Telegram
+- **Streaming end-to-end**: uploads go to a temp file on disk and are streamed
+  straight into the Bot API request; downloads stream chunk-by-chunk from
+  Telegram to the client. Memory usage stays flat even at 2 GB.
+- **Storage backend**: files live in a private dump chat; only `file_id`
+  references are kept in SQLite (`files.db`).
+- **Web auth**: signed HMAC CSRF tokens for the browser UI, `X-Api-Key` header
+  for programmatic access.
 
-### 📱 Пользовательское
-- **Современный интерфейс** - Красивый и интуитивный дизайн
-- **Папки** - Организуй файлы как хочешь
-- **Поделиться** - Создавай ссылки для шаринга с паролем
-- **Быстро** - Всё работает мгновенно
+## Requirements
 
----
+- Python 3.10+
+- A **self-hosted Telegram Bot API server** (required for the 2 GB limit;
+  the official `api.telegram.org` caps uploads at 20 MB). See
+  [tdlib.github.io/telegram-bot-api](https://tdlib.github.io/telegram-bot-api/)
+  or run it with Docker:
+  ```bash
+  docker run -d --name telegram-bot-api \
+    -v telegram-bot-api-data:/var/lib/telegram-bot-api \
+    -p 8081:8081 \
+    aiogram/telegram-bot-api \
+    --local --api-id=<YOUR_API_ID> --api-hash=<YOUR_API_HASH>
+  ```
+  The `--local` flag enables local mode: no proxy needed and up to 2000 MB
+  uploads/downloads.
 
-## 🚀 Быстрый старт
-
-### 1. Подготовка
+## Installation
 
 ```bash
-# Клонировать репо (или скачать)
-cd cloud
-
-# Установить зависимости
+git clone https://github.com/dreamcatchered/dreamCloud.git
+cd dreamCloud
 pip install -r requirements.txt
 
-# Инициализировать Telegram (если первый раз)
-python init_telegram.py
-# Следуй инструкциям для авторизации
+# Configure (see .env.example for all variables)
+export BOT_TOKEN="123456:ABC..."          # from @BotFather
+export DUMP_USER_ID="123456789"           # your Telegram user id (dump chat)
+export API_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export TG_API_BASE="http://localhost:8081"
+export PUBLIC_URL="https://your-domain.example"
+export MAX_FILE_SIZE_MB=2000
 ```
 
-### 2. Запустить БД
+Run the web app:
 
 ```bash
-python migrate_db.py
+uvicorn main:app --host 127.0.0.1 --port 5033
 ```
 
-### 3. Запустить приложение
+Run the Telegram bot (optional, separate process):
 
 ```bash
-python run.py
+python bot.py
 ```
 
-Откройи: **http://127.0.0.1:5033**
+### systemd
 
----
+Example unit files are included:
 
-## 📝 Использование
-
-1. **Регистрация** - Кликни "Зарегистрироваться"
-2. **Вход** - Введи логин и пароль
-3. **Загрузка** - Кликни "Загрузить" и выбери файл
-4. **Папки** - Создавай папки для организации
-5. **Скачивание** - Кликни на файл и выбери "Скачать"
-6. **Шаринг** - Кликни "Поделиться" и отправь ссылку
-
----
-
-## 🏗 Архитектура
-
-```
-┌─────────────┐
-│   Клиент    │
-│  (браузер)  │
-└──────┬──────┘
-       │
-       │ HTTPS
-       ↓
-┌──────────────────────────┐
-│   Flask приложение       │
-│  - Аутентификация        │
-│  - Управление папками    │
-│  - Генерация ссылок      │
-└──────┬───────────────────┘
-       │
-       ├─→ SQLite БД (метаданные)
-       │
-       └─→ ┌──────────────────┐
-           │   Телеграм        │
-           │  - Хранилище      │
-           │  - Зашифрованные  │
-           │    файлы          │
-           └──────────────────┘
-
-Поток файла:
-User → Encrypt (местно) → Telegram → Память (метаданные) → Удалить темп
-```
-
----
-
-## 🔐 Как работает шифрование
-
-1. **Генерация ключа** - Уникальный ключ для каждого файла
-2. **Локальное шифрование** - AES-256-GCM на устройстве
-3. **Загрузка** - Шифрованный файл в Telegram
-4. **Хранение ключа** - Ключ зашифрован мастер-ключом
-5. **Расшифровка** - Локально при скачивании
-
----
-
-## 📊 API Endpoints
-
-### Аутентификация
-```
-POST   /api/auth/register              Регистрация
-POST   /api/auth/login                 Вход
-POST   /api/auth/logout                Выход
-GET    /api/auth/me                    Профиль
-POST   /api/auth/change-password       Изменить пароль
-```
-
-### Файлы
-```
-GET    /api/files                      Список файлов
-POST   /api/files/upload               Загрузить
-GET    /api/files/<id>                 Инфо о файле
-GET    /api/files/<id>/download        Скачать
-DELETE /api/files/<id>                 Удалить
-```
-
-### Папки
-```
-GET    /api/folders                    Список папок
-POST   /api/folders                    Создать
-GET    /api/folders/<id>               Инфо о папке
-PUT    /api/folders/<id>               Обновить
-DELETE /api/folders/<id>               Удалить
-```
-
-### Шаринг
-```
-GET    /api/shares                     Мои ссылки
-POST   /api/shares                     Создать ссылку
-DELETE /api/shares/<id>                Удалить ссылку
-```
-
----
-
-## 🛠 Технологии
-
-| Компонент | Технология |
-|-----------|-----------|
-| Backend | Flask 3.0.0 |
-| Database | SQLite + SQLAlchemy |
-| Encryption | AES-256-GCM |
-| Storage | Telegram API |
-| Frontend | Vanilla JS + HTML/CSS |
-| Icons | Lucide |
-| Auth | Flask-Login + Bcrypt |
-
----
-
-## 📦 Требования
-
-- Python 3.9+
-- pip
-- ~100 MB место на диске
-- Интернет соединение
-
----
-
-## 🔑 Конфигурация
-
-Смотри `.env` файл:
-
-```env
-# Flask
-FLASK_SECRET_KEY=your-secret-key
-HOST=127.0.0.1
-PORT=5033
-
-# Telegram
-TELEGRAM_API_ID=your_api_id
-TELEGRAM_API_HASH=your_api_hash
-TELEGRAM_CHAT_ID=your_chat_id
-
-# Database
-DATABASE_URL=sqlite:///cloud.db
-
-# File limits
-MAX_FILE_SIZE_MB=2000
-```
-
----
-
-## 📄 Лицензия
-
-MIT License - Используй свободно!
-
-```
-Copyright (c) 2026 Dream Cloud
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
-
----
-
-## 🐛 Решение проблем
-
-### Ошибка "Client not authorized"
 ```bash
-rm cloud_session.session
-python init_telegram.py
+sudo cp dream-cloud.service dream-cloud-bot.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now dream-cloud dream-cloud-bot
 ```
 
-### Ошибка БД
+Put the environment variables into an `EnvironmentFile=/etc/dreamcloud.env`
+(root-only readable) instead of exporting them manually.
+
+## Configuration reference
+
+| Variable           | Description                                              |
+|--------------------|----------------------------------------------------------|
+| `BOT_TOKEN`        | Bot token from @BotFather (**required**)                  |
+| `DUMP_USER_ID`     | Telegram user ID of the dump chat where files are archived (**required**) |
+| `API_KEY`          | API key for `X-Api-Key` auth; also signs CSRF tokens (**required**) |
+| `TG_API_BASE`      | Base URL of the self-hosted Bot API (default `http://localhost:8081`) |
+| `PUBLIC_URL`       | Public base URL used in generated links                   |
+| `MAX_FILE_SIZE_MB` | Upload limit in MB (default `2000`)                       |
+| `DB_PATH`          | SQLite path (default `files.db`)                          |
+
+## Usage
+
+### Web UI
+
+Open `PUBLIC_URL` in a browser and drop a file.
+
+### REST API
+
 ```bash
-rm cloud.db
-python migrate_db.py
+curl -X POST "https://your-domain.example/upload" \
+  -H "x-api-key: $API_KEY" \
+  -F "file=@bigvideo.mkv"
 ```
 
-### Файлы не загружаются
-- Проверь размер (макс 2000 МБ)
-- Проверь место на диске
-- Посмотри консоль на ошибки
+Response:
 
----
+```json
+{
+  "file_id": "a1b2c3d4e5f6",
+  "url": "https://your-domain.example/file/a1b2c3d4e5f6"
+}
+```
 
-## 🚀 Production Deploy
+Download: `GET /file/<file_id>` (streams with correct filename).
+Health check: `GET /health`.
 
-### Используя Gunicorn
+### Telegram bot
+
+Send any document/photo/video/audio (up to 2 GB) to the bot — it replies with a
+public download link and archives the file in the dump chat. Access is restricted
+to `BOT_ALLOWED_USERS`.
+
+## Tests
+
+Integration test (requires a running Bot API server and real credentials):
+
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5033 app:app
+pip install psutil
+python tests/test_integration.py
 ```
 
-### Используя Docker
-```bash
-docker build -t dream-cloud .
-docker run -p 5033:5033 dream-cloud
-```
+It verifies `getMe`, a ~40 MB streaming upload with flat memory usage,
+SHA256 round-trip integrity, and the bot's message-handling logic.
 
-### Используя Systemd
-```bash
-sudo cp dream-cloud.service /etc/systemd/system/
-sudo systemctl enable dream-cloud
-sudo systemctl start dream-cloud
-```
+## Security notes
 
----
-
-## 📞 Контакты
-
-- **Issues**: Сообщай об ошибках
-- **Suggestions**: Предложи улучшения
-- **Security**: Сообщай об уязвимостях приватно
-
----
-
-## 📚 Документация
-
-- [QUICKSTART.md](QUICKSTART.md) - Быстрый старт
-- [PROJECT_STATUS.md](PROJECT_STATUS.md) - Статус проекта
-- [CLEANUP_REPORT.md](CLEANUP_REPORT.md) - Отчёт об очистке
-
----
-
-**Made with ❤️ for privacy**
-
-Dream Cloud - Your encrypted cloud, your rules.
+- Never commit `.env`, `*.session`, `files.db`, or uploaded content — they are
+  gitignored.
+- All secrets are read from environment variables only (`config.py` contains no
+  hardcoded credentials).
+- Run the app behind a reverse proxy (nginx/Caddy) with TLS; keep
+  `TG_API_BASE` internal if the Bot API server is not exposed publicly.
